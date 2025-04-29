@@ -6,16 +6,16 @@
                 <x-label>
                     Nombre
                 </x-label>
-                <x-input class="w-full" wire:model="title" required/>
-                <x-input-error for="title"/>
+                <x-input class="w-full" wire:model.live="postCreate.title" required/>
+                <x-input-error for="postCreate.title"/>
             </div>
 
             <div class="mb-4">
                 <x-label>
                     Contenido
                 </x-label>
-                <x-textarea class="w-full" wire:model="content" required></x-textarea>
-                <x-input-error for="content"/>
+                <x-textarea class="w-full" wire:model.live="postCreate.content" required></x-textarea>
+                <x-input-error for="postCreate.content"/>
             </div>
 
             <div class="mb-4">
@@ -24,7 +24,7 @@
                 </x-label>
                 
                 @if ($categories)
-                    <x-select class="w-full" wire:model="category_id">
+                    <x-select class="w-full" wire:model="postCreate.category_id">
                         <option value="" disabled>Seleccione una categoria</option>
                         @foreach ($categories as $category)
                             <option value="{{$category->id}}">
@@ -32,10 +32,35 @@
                             </option>
                         @endforeach
                     </x-select>
-                    <x-input-error for="category_id"/>
+                    <x-input-error for="postCreate.category_id"/>
                 @else
                     <p>No hay categorías disponibles.</p>
                 @endif
+            </div>
+
+            <div class="mb-4">
+                <x-label>
+                    Imagen
+                </x-label>
+
+                <div
+                    x-data="{ uploading: false, progress: 0 }"
+                    x-on:livewire-upload-start="uploading = true"
+                    x-on:livewire-upload-finish="uploading = false"
+                    x-on:livewire-upload-cancel="uploading = false"
+                    x-on:livewire-upload-error="uploading = false"
+                    x-on:livewire-upload-progress="progress = $event.detail.progress"
+                    >
+
+                    <input type="file" class="w-full" wire:model="postCreate.image"/>
+
+                     <!-- Progress Bar -->
+                    <div x-show="uploading">
+                        <progress max="100" x-bind:value="progress"></progress>
+                    </div>
+                </div>
+
+                <x-input-error for="postCreate.tags"/>
             </div>
 
             <div class="mb-4">
@@ -47,22 +72,27 @@
                     @foreach ($tags as $tag)
                         <li>
                             <label>
-                                <x-checkbox wire:model="selectedTags" value="{{$tag->id}}"/>
+                                <x-checkbox wire:model="postCreate.tags" value="{{$tag->id}}"/>
                                     {{ $tag->name }}
                             </label>
                         </li>
                     @endforeach
                 </ul>
-                <x-input-error for="selectedTags"/>
+                <x-input-error for="postCreate.tags"/>
             </div>
 
             <div class="flex justify-end">
-                <x-button>
+                <x-button wire:loading.class="opacity-50" wire.loading.attr="disabled">
                     Crear
                 </x-button>
             </div>
 
         </form>
+
+        <div wire:loading wire:target="save">
+            Procesando...
+        </div>
+
     </div>
 
     <div class="p-6 bg-white rounded-lg shadow">
@@ -155,7 +185,7 @@
 
      {{-- Formulario de edicion. Componente --}}
      <form wire:submit="update">
-        <x-dialog-modal wire:model="open">
+        <x-dialog-modal wire:model="postEdit.open">
 
             <x-slot name="title">
                 Actualizar Post
@@ -214,7 +244,7 @@
                 
             </x-slot>
             <x-slot name="footer">
-                <x-button wire:click="$set('open', false)">
+                <x-button wire:click="$set('postEdit.open', false)">
                     Cancelar
                 </x-button>
                 <x-button>

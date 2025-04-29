@@ -2,27 +2,26 @@
 
 namespace App\Livewire;
 
+use App\Livewire\Forms\PostCreateForm;
+use App\Livewire\Forms\PostEditForm;
 use App\Models\Category;
 use App\Models\Post;
 use App\Models\Tag;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 class Formulario extends Component
 {
+    use WithFileUploads; // Permite la carga de archivos.
 
     public $categories, $tags; // Variables para almacenar las categorías y etiquetas.
-    public $category_id = '', $title, $content; // Variables para almacenar los datos del formulario.
-    public $selectedTags = []; // Variable para almacenar las etiquetas seleccionadas.
     public $posts; // Variable para almacenar los posts.
-    public $open = false; // Variable para controlar la visibilidad del formulario.
-    public $postEditId = '';
-    public $postEdit = [
-        'title' => '',
-        'content' => '',
-        'category_id' => '',
-        'tags' => []
-    ];
+    public $image;
 
+    public PostCreateForm $postCreate;
+    public PostEditForm $postEdit;
+
+    //Ciclo de vida de un componente
     public function mount(){
         $this->categories = Category::all();
         $this->tags = Tag::all();
@@ -31,59 +30,32 @@ class Formulario extends Component
 
     public function save(){
 
-        $this->validate([
-            'title' => 'required',
-            'content' => 'required',
-            'category_id' => 'required | exists:categories,id',
-            'selectedTags' => 'required | array'
-        ]);
+        $this->postCreate->validate();
 
-        // Forma 1
-        // $post = Post::create([
-        //     'title' => $this->title,
-        //     'content' => $this->content,
-        //     'category_id' => $this->category_id
-        // ]);
-
-        // Forma 2
         $post = Post::create(
-            $this->only(['title', 'content', 'category_id']) // Recoger los campos del formulario.
+            $this->postCreate->only('title', 'content', 'category_id')
         );
+        $post->tags()->attach($this->postCreate->tags); // Asignar las etiquetas seleccionadas al post.
 
-        $post->tags()->attach($this->selectedTags); // Asignar las etiquetas seleccionadas al post.
+        if($this->image){
+            $post->image_path = $this->image->store('posts');
+            dd($post->image_path);
+            $post->save();
+        }
 
-        $this->reset(['title', 'content', 'category_id', 'selectedTags']); // Limpiar los campos después de guardar.
+        $this->postCreate->reset(); // Limpiar los campos después de guardar.
 
         $this->posts = Post::all(); // Actualizar la lista de posts.
     } 
 
     public function edit($postId){
 
-        $this->open = true;
-
-        $this->postEditId = $postId; // Guardar el ID del post a editar.
-
-        $post = Post::find($postId);
-        $this->postEdit['title'] = $post->title;
-        $this->postEdit['content'] = $post->content;
-        $this->postEdit['category_id'] = $post->category_id;
-        $this->postEdit['tags'] = $post->tags->pluck('id')->toArray();
+        $this->postEdit->edit($postId);
     }
 
     public function update(){
 
-        $post = Post::find($this->postEditId);
-
-       $post->update([
-            'title' => $this->postEdit['title'],
-            'content' => $this->postEdit['content'],
-            'category_id' => $this->postEdit['category_id']
-        ]);
-
-        $post->tags()->sync($this->postEdit['tags']);
-
-        $this->reset(['postEditId', 'postEdit', 'open']); // Limpiar los campos después de actualizar.
-
+        $this->postEdit->update();
         $this->posts = Post::all(); // Actualizar la lista de posts.
     }
 
