@@ -108,6 +108,9 @@
                 </li>
             @endforeach
         </ul>
+        <div class="mt-4">
+            {{ $posts->links() }}
+        </div>
     </div>
 
     {{-- Formulario de edicion. Javascript --}}

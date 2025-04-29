@@ -9,13 +9,14 @@ use App\Models\Post;
 use App\Models\Tag;
 use Livewire\Component;
 use Livewire\WithFileUploads;
+use Livewire\WithPagination;
 
 class Formulario extends Component
 {
     use WithFileUploads; // Permite la carga de archivos.
+    use WithPagination;
 
     public $categories, $tags; // Variables para almacenar las categorías y etiquetas.
-    public $posts; // Variable para almacenar los posts.
     public $image;
 
     public PostCreateForm $postCreate;
@@ -25,7 +26,6 @@ class Formulario extends Component
     public function mount(){
         $this->categories = Category::all();
         $this->tags = Tag::all();
-        $this->posts = Post::all();
     }
 
     public function save(){
@@ -43,9 +43,8 @@ class Formulario extends Component
             $post->save();
         }
 
+        $this->resetPage(pageName: 'pagPosts'); // Reiniciar la paginación al guardar un nuevo post.
         $this->postCreate->reset(); // Limpiar los campos después de guardar.
-
-        $this->posts = Post::all(); // Actualizar la lista de posts.
     } 
 
     public function edit($postId){
@@ -54,9 +53,7 @@ class Formulario extends Component
     }
 
     public function update(){
-
         $this->postEdit->update();
-        $this->posts = Post::all(); // Actualizar la lista de posts.
     }
 
     public function destroy($postId){
@@ -64,12 +61,12 @@ class Formulario extends Component
         $post = Post::find($postId);
         $post->tags()->detach(); // Desvincular las etiquetas del post.
         $post->delete(); // Eliminar el post.
-
-        $this->posts = Post::all(); // Actualizar la lista de posts.
     }
 
     public function render()
     {
-        return view('livewire.formulario');
+        $posts = Post::orderBy('id','desc')
+                    ->paginate(5, pageName: 'pagPosts');
+        return view('livewire.formulario', compact('posts'));
     }
 }
